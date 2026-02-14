@@ -1,4 +1,4 @@
-package com.example.crossplay;
+package com.crossplay;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
