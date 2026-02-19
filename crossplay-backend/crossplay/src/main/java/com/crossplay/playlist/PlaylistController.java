@@ -2,10 +2,11 @@ package com.crossplay.playlist;
 
 import com.crossplay.common.PlatformType;
 import com.crossplay.playlist.dto.PlaylistDto;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import com.crossplay.playlist.dto.TrackDto;
+import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 
 @RestController
@@ -18,8 +19,20 @@ public class PlaylistController {
         this.playlistService = playlistService;
     }
 
-    @GetMapping
-    public List<PlaylistDto> getPLaylists(@RequestParam PlatformType platform) {
-        return playlistService.getPlaylists(platform);
+    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<PlaylistDto> getPlaylists(
+            @RequestParam PlatformType platform,
+            OAuth2AuthenticationToken authentication
+    ) {
+        return playlistService.getPlaylists(platform, authentication);
+    }
+
+    @GetMapping(value = "/{playlistId}/items", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<TrackDto> getItems(
+            @PathVariable String playlistId,
+            @RequestParam PlatformType platform,
+            OAuth2AuthenticationToken authentication
+    ) {
+        return playlistService.getPlaylistTracks(platform, playlistId, authentication);
     }
 }

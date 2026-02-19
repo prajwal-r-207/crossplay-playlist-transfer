@@ -1,6 +1,7 @@
 package com.crossplay.provider;
 
 import com.crossplay.common.PlatformType;
+import com.crossplay.provider.spotify.SpotifyClient;
 import org.springframework.stereotype.Component;
 
 @Component
