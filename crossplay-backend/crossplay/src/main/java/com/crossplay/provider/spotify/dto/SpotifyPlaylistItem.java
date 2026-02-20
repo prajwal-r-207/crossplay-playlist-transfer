@@ -7,7 +7,7 @@ public class SpotifyPlaylistItem {
     private String name;
     private SpotifyOwner owner;
     private List<SpotifyImage> images;
-    private SpotifyTracks items;
+    private SpotifyItem items;
 
     public String getId() {
         return id;
@@ -41,11 +41,11 @@ public class SpotifyPlaylistItem {
         this.images = images;
     }
 
-    public SpotifyTracks getItems() {
+    public SpotifyItem getItems() {
         return items;
     }
 
-    public void setItems(SpotifyTracks items) {
+    public void setItems(SpotifyItem items) {
         this.items = items;
     }
 }

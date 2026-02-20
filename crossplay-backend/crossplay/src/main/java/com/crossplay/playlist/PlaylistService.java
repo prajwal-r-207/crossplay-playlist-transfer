@@ -57,5 +57,28 @@ public class PlaylistService {
 
         return clientProvider.getPlaylistTracks(playlistId, accessToken);
     }
+
+    public PlaylistDto createPlaylist(PlatformType platform,
+                                      String name,
+                                      String description,
+                                      boolean isPublic,
+                                      OAuth2AuthenticationToken authentication) {
+        OAuth2AuthorizedClient client =
+                authorizedClientService.loadAuthorizedClient(
+                        authentication.getAuthorizedClientRegistrationId(),
+                        authentication.getName()
+                );
+
+        String accessToken = client.getAccessToken().getTokenValue();
+
+        MusicPlatformClient clientProvider =
+                platformFactory.getClient(platform);
+        return clientProvider.createPlaylist(
+                name,
+                description,
+                isPublic,
+                accessToken
+        );
+    }
 }
 

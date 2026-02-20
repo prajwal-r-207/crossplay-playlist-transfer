@@ -3,14 +3,12 @@ package com.crossplay.provider.spotify;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
 import com.crossplay.provider.MusicPlatformClient;
-import com.crossplay.provider.spotify.dto.SpotifyArtist;
-import  com.crossplay.provider.spotify.dto.SpotifyPlaylistResponse;
-import com.crossplay.provider.spotify.dto.SpotifyPlaylistTracksResponse;
-import com.crossplay.provider.spotify.dto.SpotifyTrack;
+import com.crossplay.provider.spotify.dto.*;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class SpotifyClient implements MusicPlatformClient {
@@ -23,28 +21,35 @@ public class SpotifyClient implements MusicPlatformClient {
 
     public List<PlaylistDto> getPlaylists(String accessToken) {
 
-        SpotifyPlaylistResponse response =  webClient.get()
+        SpotifyPlaylistPageResponse response =  webClient.get()
                 .uri("https://api.spotify.com/v1/me/playlists")
-                .header("Authorization", "Bearer " + accessToken)
+                .headers(headers -> headers.setBearerAuth(accessToken))
                 .retrieve()
-                .bodyToMono(SpotifyPlaylistResponse.class)
+                .bodyToMono(SpotifyPlaylistPageResponse.class)
                 .block();
 
         return response.getItems().stream()
-                .map(item -> new PlaylistDto(
-                        item.getId(),
-                        item.getName(),
-                        item.getOwner().getDisplay_name(),
-                        item.getImages().isEmpty() ? null : item.getImages().get(0).getUrl(),
-                        item.getItems().getTotal()
-                ))
+                .map(item -> {
+                    String imageUrl = null;
+
+                    if (item.getImages() != null && !item.getImages().isEmpty()) {
+                        imageUrl = item.getImages().get(0).getUrl();
+                    }
+                    return new PlaylistDto(
+                            item.getId(),
+                            item.getName(),
+                            item.getOwner().getDisplay_name(),
+                            imageUrl,
+                            item.getItems().getTotal()
+                    );
+                })
                 .toList();
     }
 
     public List<TrackDto> getPlaylistTracks(String playlistId, String accessToken) {
         SpotifyPlaylistTracksResponse response = webClient.get().
                 uri("https://api.spotify.com/v1/playlists/{playlistId}/items", playlistId)
-                .header("Authorization", "Bearer " + accessToken)
+                .headers(headers -> headers.setBearerAuth(accessToken))
                 .retrieve()
                 .bodyToMono(SpotifyPlaylistTracksResponse.class)
                 .block();
@@ -69,5 +74,31 @@ public class SpotifyClient implements MusicPlatformClient {
                     );
                 })
                 .toList();
+    }
+
+    public PlaylistDto createPlaylist(String name, String description, boolean isPublic, String accessToken) {
+        Map<String, Object> body = Map.of(
+                "name", name,
+                "description", description,
+                "public", isPublic
+                );
+
+        SpotifyPlaylistResponse response = webClient.post()
+                .uri("https://api.spotify.com/v1/me/playlists")
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(SpotifyPlaylistResponse.class)
+                .block();
+
+        return new PlaylistDto(
+                response.getId(),
+                response.getName(),
+                response.getOwner().getDisplay_name(),
+                response.getImages().isEmpty()
+                        ? null
+                        : response.getImages().get(0).getUrl(),
+                response.getItems().getTotal()
+        );
     }
 }

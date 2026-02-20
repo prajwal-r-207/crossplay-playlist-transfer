@@ -1,6 +1,7 @@
 package com.crossplay.playlist;
 
 import com.crossplay.common.PlatformType;
+import com.crossplay.playlist.dto.CreatePlaylistRequest;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
 import org.springframework.http.MediaType;
@@ -34,5 +35,20 @@ public class PlaylistController {
             OAuth2AuthenticationToken authentication
     ) {
         return playlistService.getPlaylistTracks(platform, playlistId, authentication);
+    }
+
+    @PostMapping
+    public PlaylistDto createPlaylist(
+            @RequestParam PlatformType platform,
+            @RequestBody CreatePlaylistRequest request,
+            OAuth2AuthenticationToken authentication
+    ) {
+        return playlistService.createPlaylist(
+                platform,
+                request.getName(),
+                request.getDescription(),
+                request.isPublic(),
+                authentication
+        );
     }
 }

@@ -18,6 +18,7 @@ public class PlaylistDto {
         this.imageUrl = imageUrl;
         this.trackCount = trackCount;
     }
+
     public String getId() {
         return id;
     }

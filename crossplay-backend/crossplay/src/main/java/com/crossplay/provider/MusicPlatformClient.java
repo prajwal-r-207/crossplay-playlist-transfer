@@ -8,5 +8,9 @@ public interface MusicPlatformClient {
 
     List<PlaylistDto> getPlaylists(String accessToken);
     List<TrackDto> getPlaylistTracks(String playlistId, String accessToken);
+    PlaylistDto createPlaylist(String name,
+                               String description,
+                               boolean isPublic,
+                               String accessToken);
 }
 

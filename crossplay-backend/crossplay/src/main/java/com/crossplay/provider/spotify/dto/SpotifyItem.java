@@ -1,6 +1,6 @@
 package com.crossplay.provider.spotify.dto;
 
-public class SpotifyTracks {
+public class SpotifyItem {
     private int total;
 
     public int getTotal() {
