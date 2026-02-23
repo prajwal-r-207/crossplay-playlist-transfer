@@ -101,4 +101,20 @@ public class SpotifyClient implements MusicPlatformClient {
                 response.getItems().getTotal()
         );
     }
+
+    public void addTracks(String playlistId, List<String> trackIds, String accessToken) {
+        List<String> uris = trackIds.stream()
+                .map(id -> "spotify:track:" + id)
+                .toList();
+
+        Map<String, Object> body = Map.of("uris", uris);
+
+        webClient.post()
+                .uri("https://api.spotify.com/v1/playlists/{playlistId}/items", playlistId)
+                .headers(headers -> headers.setBearerAuth(accessToken))
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(Void.class)
+                .block();
+    }
 }

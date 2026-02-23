@@ -80,5 +80,73 @@ public class PlaylistService {
                 accessToken
         );
     }
+
+    public void addTracks(PlatformType platform,
+                          String playlistId,
+                          List<String> trackIds,
+                          OAuth2AuthenticationToken authentication) {
+
+        OAuth2AuthorizedClient client =
+                authorizedClientService.loadAuthorizedClient(
+                        authentication.getAuthorizedClientRegistrationId(),
+                        authentication.getName()
+                );
+
+        String accessToken = client.getAccessToken().getTokenValue();
+
+        MusicPlatformClient provider =
+                platformFactory.getClient(platform);
+
+        provider.addTracks(playlistId, trackIds, accessToken);
+    }
+
+    public PlaylistDto copyPlaylist(
+            PlatformType platform,
+            String sourcePlaylistId,
+            String newName,
+            OAuth2AuthenticationToken authentication
+    ) {
+
+        //Get access token
+        OAuth2AuthorizedClient client =
+                authorizedClientService.loadAuthorizedClient(
+                        authentication.getAuthorizedClientRegistrationId(),
+                        authentication.getName()
+                );
+
+        String accessToken = client.getAccessToken().getTokenValue();
+
+        //Get provider
+        MusicPlatformClient provider = platformFactory.getClient(platform);
+
+        //Fetch tracks from source playlist
+        List<TrackDto> tracks =
+                provider.getPlaylistTracks(sourcePlaylistId, accessToken);
+
+        //Create new playlist
+        PlaylistDto newPlaylist =
+                provider.createPlaylist(
+                        newName,
+                        "Copied via CrossPlay",
+                        true,
+                        accessToken
+                );
+
+        //Extract track IDs
+        List<String> trackIds =
+                tracks.stream()
+                        .map(TrackDto::getId)
+                        .toList();
+
+        //Spotify allows max 100 tracks per request
+        for (int i = 0; i < trackIds.size(); i += 100) {
+            List<String> batch =
+                    trackIds.subList(i, Math.min(i + 100, trackIds.size()));
+
+            provider.addTracks(newPlaylist.getId(), batch, accessToken);
+        }
+
+        return newPlaylist;
+    }
 }
 

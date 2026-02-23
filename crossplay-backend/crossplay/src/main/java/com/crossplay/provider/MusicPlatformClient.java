@@ -12,5 +12,8 @@ public interface MusicPlatformClient {
                                String description,
                                boolean isPublic,
                                String accessToken);
+    void addTracks(String playlistId,
+                   List<String> trackIds,
+                   String accessToken);
 }
 

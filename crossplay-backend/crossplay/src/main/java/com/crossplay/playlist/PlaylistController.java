@@ -1,6 +1,7 @@
 package com.crossplay.playlist;
 
 import com.crossplay.common.PlatformType;
+import com.crossplay.playlist.dto.AddTracksRequest;
 import com.crossplay.playlist.dto.CreatePlaylistRequest;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
@@ -48,6 +49,36 @@ public class PlaylistController {
                 request.getName(),
                 request.getDescription(),
                 request.isPublic(),
+                authentication
+        );
+    }
+
+    @PostMapping("/{playlistId}/items")
+    public void addTracks(
+            @PathVariable String playlistId,
+            @RequestParam PlatformType platform,
+            @RequestBody AddTracksRequest request,
+            OAuth2AuthenticationToken authentication
+    ) {
+        playlistService.addTracks(
+                platform,
+                playlistId,
+                request.getTrackIds(),
+                authentication
+        );
+    }
+
+    @PostMapping("/{playlistId}/copy")
+    public PlaylistDto copyPlaylist(
+            @PathVariable String playlistId,
+            @RequestParam PlatformType platform,
+            @RequestParam String newName,
+            OAuth2AuthenticationToken authentication
+    ) {
+        return playlistService.copyPlaylist(
+                platform,
+                playlistId,
+                newName,
                 authentication
         );
     }
