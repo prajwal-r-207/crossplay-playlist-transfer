@@ -8,7 +8,7 @@ public class SpotifyTrack {
     private String name;
     private int duration_ms;
     private boolean explicit;
-
+    private String uri;
     private SpotifyAlbum album;
     private List<SpotifyArtist> artists;
 
@@ -58,5 +58,13 @@ public class SpotifyTrack {
 
     public void setArtists(List<SpotifyArtist> artists) {
         this.artists = artists;
+    }
+
+    public String getUri() {
+        return uri;
+    }
+
+    public void setUri(String uri) {
+        this.uri = uri;
     }
 }

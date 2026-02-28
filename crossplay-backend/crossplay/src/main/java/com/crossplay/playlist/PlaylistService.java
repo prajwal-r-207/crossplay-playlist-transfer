@@ -1,5 +1,8 @@
 package com.crossplay.playlist;
 
+import com.crossplay.auth.DevTokenStore;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.crossplay.common.PlatformType;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
@@ -15,13 +18,17 @@ import java.util.List;
 @Service
 public class PlaylistService {
 
+    private static final Logger log =
+            LoggerFactory.getLogger(PlaylistService.class);
     private final OAuth2AuthorizedClientService authorizedClientService;
     private final MusicPlatformFactory platformFactory;
+    private final DevTokenStore tokenStore;
 
     public PlaylistService(OAuth2AuthorizedClientService authorizedClientService,
-                           MusicPlatformFactory platformFactory) {
+                           MusicPlatformFactory platformFactory, DevTokenStore tokenStore) {
         this.authorizedClientService = authorizedClientService;
         this.platformFactory = platformFactory;
+        this.tokenStore = tokenStore;
     }
 
     public List<PlaylistDto> getPlaylists(PlatformType platform,
@@ -29,11 +36,17 @@ public class PlaylistService {
 
         OAuth2AuthorizedClient client =
                 authorizedClientService.loadAuthorizedClient(
-                        authentication.getAuthorizedClientRegistrationId(),
+                        platform.getRegistrationId(),
                         authentication.getName()
                 );
+        log.info("platform.getRegistrationId(), {}",platform.getRegistrationId());
+        log.info("Principal name: {}", authentication.getName());
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
 
-        String accessToken = client.getAccessToken().getTokenValue();
+        if (accessToken == null) {
+            throw new RuntimeException("No token stored for " + platform);
+        }
 
         MusicPlatformClient clientProvider =
                 platformFactory.getClient(platform);
@@ -46,11 +59,12 @@ public class PlaylistService {
 
         OAuth2AuthorizedClient client =
                 authorizedClientService.loadAuthorizedClient(
-                        authentication.getAuthorizedClientRegistrationId(),
+                        platform.getRegistrationId(),
                         authentication.getName()
                 );
 
-        String accessToken = client.getAccessToken().getTokenValue();
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
 
         MusicPlatformClient clientProvider =
                 platformFactory.getClient(platform);
@@ -65,12 +79,12 @@ public class PlaylistService {
                                       OAuth2AuthenticationToken authentication) {
         OAuth2AuthorizedClient client =
                 authorizedClientService.loadAuthorizedClient(
-                        authentication.getAuthorizedClientRegistrationId(),
+                        platform.getRegistrationId(),
                         authentication.getName()
                 );
 
-        String accessToken = client.getAccessToken().getTokenValue();
-
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
         MusicPlatformClient clientProvider =
                 platformFactory.getClient(platform);
         return clientProvider.createPlaylist(
@@ -88,12 +102,12 @@ public class PlaylistService {
 
         OAuth2AuthorizedClient client =
                 authorizedClientService.loadAuthorizedClient(
-                        authentication.getAuthorizedClientRegistrationId(),
+                        platform.getRegistrationId(),
                         authentication.getName()
                 );
 
-        String accessToken = client.getAccessToken().getTokenValue();
-
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
         MusicPlatformClient provider =
                 platformFactory.getClient(platform);
 
@@ -110,12 +124,12 @@ public class PlaylistService {
         //Get access token
         OAuth2AuthorizedClient client =
                 authorizedClientService.loadAuthorizedClient(
-                        authentication.getAuthorizedClientRegistrationId(),
+                        platform.getRegistrationId(),
                         authentication.getName()
                 );
 
-        String accessToken = client.getAccessToken().getTokenValue();
-
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
         //Get provider
         MusicPlatformClient provider = platformFactory.getClient(platform);
 

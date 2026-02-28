@@ -8,7 +8,7 @@ public class TrackDto {
     private String name;
     private String albumName;
     private List<String> artists;
-    private int durationMs;
+    private long durationMs;
     private String imageUrl;
     private boolean explicit;
 
@@ -16,7 +16,7 @@ public class TrackDto {
                     String name,
                     String albumName,
                     List<String> artists,
-                    int durationMs,
+                    long durationMs,
                     String imageUrl,
                     boolean explicit) {
         this.id = id;
@@ -44,7 +44,7 @@ public class TrackDto {
         return artists;
     }
 
-    public int getDurationMs() {
+    public long getDurationMs() {
         return durationMs;
     }
 

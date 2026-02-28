@@ -1,4 +1,4 @@
-package com.crossplay.debug;
+package com.crossplay;
 
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;

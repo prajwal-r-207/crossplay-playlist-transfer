@@ -21,7 +21,7 @@ public class SpotifyClient implements MusicPlatformClient {
 
     public List<PlaylistDto> getPlaylists(String accessToken) {
 
-        SpotifyPlaylistPageResponse response =  webClient.get()
+        SpotifyPlaylistPageResponse response = webClient.get()
                 .uri("https://api.spotify.com/v1/me/playlists")
                 .headers(headers -> headers.setBearerAuth(accessToken))
                 .retrieve()
@@ -81,7 +81,7 @@ public class SpotifyClient implements MusicPlatformClient {
                 "name", name,
                 "description", description,
                 "public", isPublic
-                );
+        );
 
         SpotifyPlaylistResponse response = webClient.post()
                 .uri("https://api.spotify.com/v1/me/playlists")
@@ -116,5 +116,41 @@ public class SpotifyClient implements MusicPlatformClient {
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();
+    }
+
+    @Override
+    public List<TrackDto> searchTracks(String query, String accessToken) {
+
+        SpotifySearchResponse response =
+                webClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .scheme("https")
+                                .host("api.spotify.com")
+                                .path("/v1/search")
+                                .queryParam("q", query)
+                                .queryParam("type", "track")
+                                .queryParam("limit", 5)
+                                .build())
+                        .headers(headers -> headers.setBearerAuth(accessToken))
+                        .retrieve()
+                        .bodyToMono(SpotifySearchResponse.class)
+                        .block();
+
+        if (response == null || response.getTracks() == null)
+            return List.of();
+
+        return response.getTracks().getItems().stream()
+                .map(track -> new TrackDto(
+                        track.getId(),
+                        track.getName(),
+                        track.getAlbum().getName(),
+                        track.getArtists().stream()
+                                .map(SpotifyArtist::getName)
+                                .toList(),
+                        track.getDuration_ms(),
+                        track.getUri(),   // IMPORTANT for addTracks
+                        track.isExplicit()
+                ))
+                .toList();
     }
 }
