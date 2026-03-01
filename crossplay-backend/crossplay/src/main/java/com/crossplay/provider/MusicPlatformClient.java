@@ -7,19 +7,18 @@ import java.util.List;
 
 public interface MusicPlatformClient {
 
-    List<PlaylistDto> getPlaylists(String accessToken);
+        List<PlaylistDto> getPlaylists(String accessToken);
 
-    List<TrackDto> getPlaylistTracks(String playlistId, String accessToken);
+        List<TrackDto> getPlaylistTracks(String playlistId, String accessToken);
 
-    PlaylistDto createPlaylist(String name,
-                               String description,
-                               boolean isPublic,
-                               String accessToken);
+        PlaylistDto createPlaylist(String name,
+                        String description,
+                        boolean isPublic,
+                        String accessToken);
 
-    void addTracks(String playlistId,
-                   List<String> trackIds,
-                   String accessToken);
+        void addTracks(String playlistId,
+                        List<String> trackIds,
+                        String accessToken);
 
-    List<TrackDto> searchTracks(String query, String accessToken);
+        List<TrackDto> searchTracks(String query, String accessToken);
 }
-
