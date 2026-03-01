@@ -1,9 +1,12 @@
 package com.crossplay.provider.youtube;
 
+import com.crossplay.playlist.PlaylistService;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
 import com.crossplay.provider.MusicPlatformClient;
 import com.crossplay.provider.youtube.dto.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -13,6 +16,8 @@ import java.util.List;
 public class YouTubeClient implements MusicPlatformClient {
 
     private final WebClient webClient;
+    private static final Logger log =
+            LoggerFactory.getLogger(YouTubeClient.class);
 
     public YouTubeClient(WebClient webClient) {
         this.webClient = webClient;
@@ -214,6 +219,7 @@ public class YouTubeClient implements MusicPlatformClient {
                         .bodyToMono(YouTubeSearchResponse.class)
                         .block();
 
+        log.info("youtube searchResponse: {}",searchResponse);
         if (searchResponse == null || searchResponse.getItems() == null)
             return List.of();
 

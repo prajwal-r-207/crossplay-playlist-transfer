@@ -1,11 +1,15 @@
 package com.crossplay.playlist;
 
+import com.crossplay.auth.DevTokenStore;
 import com.crossplay.common.PlatformType;
 import com.crossplay.playlist.dto.AddTracksRequest;
 import com.crossplay.playlist.dto.CreatePlaylistRequest;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
+import com.crossplay.provider.MusicPlatformClient;
+import com.crossplay.provider.MusicPlatformFactory;
 import org.springframework.http.MediaType;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,8 +21,16 @@ public class PlaylistController {
 
     private final PlaylistService playlistService;
 
-    public PlaylistController(PlaylistService playlistService) {
+    private final OAuth2AuthorizedClientService authorizedClientService;
+    private final MusicPlatformFactory platformFactory;
+    private final DevTokenStore tokenStore;
+
+    public PlaylistController(PlaylistService playlistService, OAuth2AuthorizedClientService authorizedClientService,
+                              MusicPlatformFactory platformFactory, DevTokenStore tokenStore) {
         this.playlistService = playlistService;
+        this.authorizedClientService = authorizedClientService;
+        this.platformFactory = platformFactory;
+        this.tokenStore = tokenStore;
     }
 
     @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
@@ -81,5 +93,25 @@ public class PlaylistController {
                 newName,
                 authentication
         );
+    }
+
+    @GetMapping("/search")
+    public List<TrackDto> search(
+            @RequestParam PlatformType platform,
+            @RequestParam String query,
+            OAuth2AuthenticationToken authentication
+    ) {
+
+//        OAuth2AuthorizedClient client =
+//                authorizedClientService.loadAuthorizedClient(
+//                        platform.getRegistrationId(),
+//                        authentication.getName()
+//                );
+//
+//        String accessToken = client.getAccessToken().getTokenValue();
+        String accessToken = tokenStore.getToken(platform.getRegistrationId());
+        MusicPlatformClient provider = platformFactory.getClient(platform);
+
+        return provider.searchTracks(query, accessToken);
     }
 }
