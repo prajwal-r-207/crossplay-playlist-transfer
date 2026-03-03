@@ -1,5 +1,6 @@
 package com.crossplay.provider.youtube;
 
+import com.crossplay.exception.ExternalApiException;
 import com.crossplay.playlist.dto.PlaylistDto;
 import com.crossplay.playlist.dto.TrackDto;
 import com.crossplay.provider.MusicPlatformClient;
@@ -20,6 +21,7 @@ public class YouTubeClient implements MusicPlatformClient {
 
         private final WebClient webClient;
         private static final Logger log = LoggerFactory.getLogger(YouTubeClient.class);
+        private static final String PLATFORM = "YouTube";
 
         public YouTubeClient(WebClient webClient) {
                 this.webClient = webClient;
@@ -27,6 +29,7 @@ public class YouTubeClient implements MusicPlatformClient {
 
         @Override
         public List<PlaylistDto> getPlaylists(String accessToken) {
+                log.debug("[YouTube] Fetching playlists for current user");
 
                 YouTubePlaylistResponse response = webClient.get()
                                 .uri(uriBuilder -> uriBuilder
@@ -38,18 +41,28 @@ public class YouTubeClient implements MusicPlatformClient {
                                                 .build())
                                 .headers(headers -> headers.setBearerAuth(accessToken))
                                 .retrieve()
+                                .onStatus(
+                                                status -> !status.is2xxSuccessful(),
+                                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                .map(body -> new ExternalApiException(
+                                                                                PLATFORM,
+                                                                                clientResponse.statusCode().value(),
+                                                                                body)))
                                 .bodyToMono(YouTubePlaylistResponse.class)
                                 .block();
 
                 if (response == null || response.getItems() == null) {
+                        log.warn("[YouTube] getPlaylists returned null or empty response");
                         return List.of();
                 }
+
+                log.info("[YouTube] Fetched {} playlists", response.getItems().size());
 
                 return response.getItems().stream()
                                 .map(item -> new PlaylistDto(
                                                 item.getId(),
                                                 item.getSnippet().getTitle(),
-                                                "YouTube", // owner (YouTube doesn't return like Spotify)
+                                                "YouTube",
                                                 item.getSnippet().getThumbnails() != null &&
                                                                 item.getSnippet().getThumbnails().getMedium() != null
                                                                                 ? item.getSnippet().getThumbnails()
@@ -61,6 +74,7 @@ public class YouTubeClient implements MusicPlatformClient {
 
         @Override
         public List<TrackDto> getPlaylistTracks(String playlistId, String accessToken) {
+                log.debug("[YouTube] Fetching tracks for playlistId={}", playlistId);
 
                 YouTubePlaylistTracksResponse response = webClient.get()
                                 .uri(uriBuilder -> uriBuilder
@@ -73,12 +87,22 @@ public class YouTubeClient implements MusicPlatformClient {
                                                 .build())
                                 .headers(headers -> headers.setBearerAuth(accessToken))
                                 .retrieve()
+                                .onStatus(
+                                                status -> !status.is2xxSuccessful(),
+                                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                .map(body -> new ExternalApiException(
+                                                                                PLATFORM,
+                                                                                clientResponse.statusCode().value(),
+                                                                                body)))
                                 .bodyToMono(YouTubePlaylistTracksResponse.class)
                                 .block();
 
                 if (response == null || response.getItems() == null) {
+                        log.warn("[YouTube] getPlaylistTracks returned null or empty for playlistId={}", playlistId);
                         return List.of();
                 }
+
+                log.info("[YouTube] Fetched {} tracks for playlistId={}", response.getItems().size(), playlistId);
 
                 return response.getItems().stream().map(item -> {
 
@@ -100,12 +124,11 @@ public class YouTubeClient implements MusicPlatformClient {
                         return new TrackDto(
                                         videoId,
                                         item.getSnippet().getTitle(),
-                                        null, // no album in YouTube
-                                        artists, // placeholder
-                                        0L, // playlist items API doesn't return duration
+                                        null,
+                                        artists,
+                                        0L,
                                         thumbnailUrl,
-                                        false // no explicit info
-                        );
+                                        false);
                 }).toList();
         }
 
@@ -133,6 +156,8 @@ public class YouTubeClient implements MusicPlatformClient {
                         boolean isPublic,
                         String accessToken) {
 
+                log.debug("[YouTube] Creating playlist name='{}' isPublic={}", name, isPublic);
+
                 String privacy = isPublic ? "public" : "private";
 
                 YouTubeCreatePlaylistRequest request = new YouTubeCreatePlaylistRequest(name, description, privacy);
@@ -147,8 +172,22 @@ public class YouTubeClient implements MusicPlatformClient {
                                 .headers(headers -> headers.setBearerAuth(accessToken))
                                 .bodyValue(request)
                                 .retrieve()
+                                .onStatus(
+                                                status -> !status.is2xxSuccessful(),
+                                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                .map(body -> new ExternalApiException(
+                                                                                PLATFORM,
+                                                                                clientResponse.statusCode().value(),
+                                                                                body)))
                                 .bodyToMono(YouTubePlaylistItem.class)
                                 .block();
+
+                if (response == null) {
+                        throw new ExternalApiException(PLATFORM, 200, "Null response body when creating playlist");
+                }
+
+                log.info("[YouTube] Created playlist id={} name='{}'", response.getId(),
+                                response.getSnippet().getTitle());
 
                 String imageUrl = null;
 
@@ -165,14 +204,15 @@ public class YouTubeClient implements MusicPlatformClient {
                                 response.getSnippet().getTitle(),
                                 response.getSnippet().getChannelTitle(),
                                 imageUrl,
-                                0 // new playlist → 0 items
-                );
+                                0);
         }
 
         @Override
         public void addTracks(String playlistId,
                         List<String> videoIds,
                         String accessToken) {
+
+                log.debug("[YouTube] Adding {} tracks to playlistId={}", videoIds.size(), playlistId);
 
                 for (String videoId : videoIds) {
 
@@ -188,13 +228,26 @@ public class YouTubeClient implements MusicPlatformClient {
                                         .headers(headers -> headers.setBearerAuth(accessToken))
                                         .bodyValue(request)
                                         .retrieve()
+                                        .onStatus(
+                                                        status -> !status.is2xxSuccessful(),
+                                                        clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                        .map(body -> new ExternalApiException(
+                                                                                        PLATFORM,
+                                                                                        clientResponse.statusCode()
+                                                                                                        .value(),
+                                                                                        body)))
                                         .toBodilessEntity()
                                         .block();
+
+                        log.debug("[YouTube] Added videoId={} to playlistId={}", videoId, playlistId);
                 }
+
+                log.info("[YouTube] Successfully added {} tracks to playlistId={}", videoIds.size(), playlistId);
         }
 
         @Override
         public List<TrackDto> searchTracks(String query, String accessToken) {
+                log.debug("[YouTube] Searching tracks query='{}'", query);
 
                 YouTubeSearchResponse searchResponse = webClient.get()
                                 .uri(uriBuilder -> uriBuilder
@@ -208,12 +261,22 @@ public class YouTubeClient implements MusicPlatformClient {
                                                 .build())
                                 .headers(headers -> headers.setBearerAuth(accessToken))
                                 .retrieve()
+                                .onStatus(
+                                                status -> !status.is2xxSuccessful(),
+                                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                .map(body -> new ExternalApiException(
+                                                                                PLATFORM,
+                                                                                clientResponse.statusCode().value(),
+                                                                                body)))
                                 .bodyToMono(YouTubeSearchResponse.class)
                                 .block();
 
-                log.info("youtube searchResponse: {}", searchResponse);
-                if (searchResponse == null || searchResponse.getItems() == null)
+                if (searchResponse == null || searchResponse.getItems() == null) {
+                        log.warn("[YouTube] searchTracks returned no results for query='{}'", query);
                         return List.of();
+                }
+
+                log.info("[YouTube] Search for '{}' returned {} candidates", query, searchResponse.getItems().size());
 
                 // Collect video IDs for a single batch duration call
                 List<String> videoIds = searchResponse.getItems().stream()
@@ -262,10 +325,18 @@ public class YouTubeClient implements MusicPlatformClient {
                                                 .build())
                                 .headers(headers -> headers.setBearerAuth(accessToken))
                                 .retrieve()
+                                .onStatus(
+                                                status -> !status.is2xxSuccessful(),
+                                                clientResponse -> clientResponse.bodyToMono(String.class)
+                                                                .map(body -> new ExternalApiException(
+                                                                                PLATFORM,
+                                                                                clientResponse.statusCode().value(),
+                                                                                body)))
                                 .bodyToMono(YouTubeVideoResponse.class)
                                 .block();
 
                 if (videoResponse == null || videoResponse.getItems() == null) {
+                        log.warn("[YouTube] fetchDurations returned null or empty for ids={}", idParam);
                         return Map.of();
                 }
 
@@ -274,7 +345,7 @@ public class YouTubeClient implements MusicPlatformClient {
                         if (item.getContentDetails() != null && item.getContentDetails().getDuration() != null) {
                                 long ms = parseIso8601Duration(item.getContentDetails().getDuration());
                                 result.put(item.getId(), ms);
-                                log.debug("duration: videoId={} iso8601={} ms={}",
+                                log.debug("[YouTube] duration: videoId={} iso8601={} ms={}",
                                                 item.getId(), item.getContentDetails().getDuration(), ms);
                         }
                 }

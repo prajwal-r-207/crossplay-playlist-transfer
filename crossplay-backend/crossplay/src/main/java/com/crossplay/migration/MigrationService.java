@@ -1,6 +1,7 @@
 package com.crossplay.migration;
 
 import com.crossplay.auth.DevTokenStore;
+import com.crossplay.exception.TokenNotFoundException;
 import com.crossplay.migration.dto.MigrationRequest;
 import com.crossplay.migration.dto.MigrationResult;
 import com.crossplay.playlist.dto.PlaylistDto;
@@ -9,7 +10,6 @@ import com.crossplay.provider.MusicPlatformClient;
 import com.crossplay.provider.MusicPlatformFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.stereotype.Service;
@@ -43,13 +43,29 @@ public class MigrationService {
                         MigrationRequest request,
                         OAuth2AuthenticationToken authentication) {
 
+                log.info("[MigrationService] migrate requested: source={} target={} playlistId={} skipUnmatched={}",
+                                request.getSourcePlatform(),
+                                request.getTargetPlatform(),
+                                request.getSourcePlaylistId(),
+                                request.isSkipUnmatched());
+
                 // Load tokens from the dev token store
                 // (swap these with OAuth2AuthorizedClient once prod auth is wired up)
                 String sourceToken = tokenStore.getToken(request.getSourcePlatform().getRegistrationId());
+                if (sourceToken == null) {
+                        log.warn("[MigrationService] No token stored for source platform={}",
+                                        request.getSourcePlatform());
+                        throw new TokenNotFoundException(request.getSourcePlatform().name());
+                }
+
                 String targetToken = tokenStore.getToken(request.getTargetPlatform().getRegistrationId());
+                if (targetToken == null) {
+                        log.warn("[MigrationService] No token stored for target platform={}",
+                                        request.getTargetPlatform());
+                        throw new TokenNotFoundException(request.getTargetPlatform().name());
+                }
 
                 MusicPlatformClient sourceClient = platformFactory.getClient(request.getSourcePlatform());
-
                 MusicPlatformClient targetClient = platformFactory.getClient(request.getTargetPlatform());
 
                 // ── Resolve source tracks: full playlist, then filter if specific IDs
@@ -64,13 +80,16 @@ public class MigrationService {
                         sourceTracks = allTracks.stream()
                                         .filter(t -> requestedIds.contains(t.getId()))
                                         .toList();
-                        log.info("Partial migration: {} of {} tracks selected",
+                        log.info("[MigrationService] Partial migration: {} of {} tracks selected",
                                         sourceTracks.size(), allTracks.size());
                 } else {
                         sourceTracks = allTracks;
-                        log.info("Full playlist migration: {} tracks", sourceTracks.size());
+                        log.info("[MigrationService] Full playlist migration: {} tracks", sourceTracks.size());
                 }
+
                 if (sourceTracks == null || sourceTracks.isEmpty()) {
+                        log.warn("[MigrationService] No source tracks found for playlistId={}",
+                                        request.getSourcePlaylistId());
                         return new MigrationResult(0, 0, 0, List.of());
                 }
 
@@ -88,6 +107,9 @@ public class MigrationService {
                                 true,
                                 targetToken);
 
+                log.info("[MigrationService] Created target playlist id={} name='{}'",
+                                newPlaylist.getId(), newPlaylist.getName());
+
                 long toleranceMs = request.getDurationToleranceMs() > 0
                                 ? request.getDurationToleranceMs()
                                 : DEFAULT_DURATION_TOLERANCE_MS;
@@ -100,13 +122,14 @@ public class MigrationService {
                 for (TrackDto track : sourceTracks) {
 
                         String query = buildSearchQuery(track);
-                        log.info("Query: {}", query);
+                        log.debug("[MigrationService] Query: {}", query);
 
                         List<TrackDto> candidates = targetClient.searchTracks(query, targetToken);
-                        log.info("candidates: {}", candidates);
+                        log.debug("[MigrationService] Candidates for '{}': {}", track.getName(), candidates.size());
 
                         TrackDto bestMatch = pickBestMatch(track, candidates, toleranceMs);
-                        log.info("bestMatch: {}", bestMatch);
+                        log.debug("[MigrationService] bestMatch for '{}': {}", track.getName(),
+                                        bestMatch != null ? bestMatch.getName() : "none");
 
                         if (bestMatch != null) {
                                 targetIds.add(bestMatch.getId());
@@ -120,8 +143,7 @@ public class MigrationService {
 
                                 if (!request.isSkipUnmatched()) {
                                         // Fail-fast mode: abort and report what was done so far
-                                        log.warn("Aborting migration: no match for '{}'", label);
-                                        // Add whatever we have so far, then return partial result
+                                        log.warn("[MigrationService] Aborting migration: no match for '{}'", label);
                                         addIfNotEmpty(targetClient, newPlaylist.getId(), targetIds, targetToken);
                                         return new MigrationResult(
                                                         sourceTracks.size(),
@@ -130,11 +152,13 @@ public class MigrationService {
                                                         failedTracks);
                                 }
 
-                                log.warn("No match found for '{}', skipping (partial migration).", label);
+                                log.warn("[MigrationService] No match found for '{}', skipping (partial migration).",
+                                                label);
                         }
                 }
 
-                log.info("targetIds: {}", targetIds);
+                log.info("[MigrationService] Migration complete: total={} matched={} failed={}",
+                                sourceTracks.size(), matched, failedTracks.size());
 
                 // Add all matched tracks in one go
                 addIfNotEmpty(targetClient, newPlaylist.getId(), targetIds, targetToken);
@@ -155,6 +179,8 @@ public class MigrationService {
                         List<String> ids,
                         String token) {
                 if (!ids.isEmpty()) {
+                        log.info("[MigrationService] Adding {} matched tracks to target playlistId={}", ids.size(),
+                                        playlistId);
                         client.addTracks(playlistId, ids, token);
                 }
         }
@@ -209,7 +235,8 @@ public class MigrationService {
                         if (titleMatches) {
                                 // Tier 1: perfect match (title + duration within tolerance)
                                 if (sourceHasDuration && candidateHasDuration && durationDiff < toleranceMs) {
-                                        log.info("Tier-1 match: '{}' durationDiff={}ms", candidate.getName(),
+                                        log.info("[MigrationService] Tier-1 match: '{}' durationDiff={}ms",
+                                                        candidate.getName(),
                                                         durationDiff);
                                         return candidate;
                                 }
@@ -224,7 +251,7 @@ public class MigrationService {
 
                 // Tier 2: a title match existed but duration didn't fit the tight window
                 if (bestTitleMatch != null) {
-                        log.info("Tier-2 match (title only): '{}' durationDiff={}ms",
+                        log.info("[MigrationService] Tier-2 match (title only): '{}' durationDiff={}ms",
                                         bestTitleMatch.getName(), bestTitleMatchDurationDiff);
                         return bestTitleMatch;
                 }
@@ -239,11 +266,11 @@ public class MigrationService {
                                                 return Long.compare(diffA, diffB);
                                         })
                                         .orElse(candidates.get(0));
-                        log.info("Fallback (closest duration): '{}'", closestByDuration.getName());
+                        log.info("[MigrationService] Fallback (closest duration): '{}'", closestByDuration.getName());
                         return closestByDuration;
                 }
 
-                log.info("Fallback (first result): '{}'", candidates.get(0).getName());
+                log.info("[MigrationService] Fallback (first result): '{}'", candidates.get(0).getName());
                 return candidates.get(0);
         }
 }
