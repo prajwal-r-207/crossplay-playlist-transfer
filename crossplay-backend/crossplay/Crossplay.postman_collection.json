@@ -1,0 +1,579 @@
+{
+    "info": {
+        "name": "Crossplay API",
+        "_postman_id": "crossplay-api-collection",
+        "description": "Postman collection for the Crossplay Playlist Transfer backend API.\n\nBase URL: http://localhost:8080\n\n**Authentication:** All endpoints require an active OAuth2 session. Log in first by visiting http://localhost:8080/oauth2/authorization/spotify or /oauth2/authorization/google in a browser. The session cookie will be picked up automatically by Postman.\n\n**Platform values:** `SPOTIFY` | `YOUTUBE`",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:8080",
+            "type": "string"
+        },
+        {
+            "key": "spotifyPlaylistId",
+            "value": "37i9dQZF1DX4JAvHpjsfWs",
+            "type": "string",
+            "description": "Replace with a real Spotify playlist ID"
+        },
+        {
+            "key": "youtubePlaylistId",
+            "value": "PLFgquLnL59alCl_2TQvOiD5Vgm1hCaGSI",
+            "type": "string",
+            "description": "Replace with a real YouTube playlist ID"
+        }
+    ],
+    "item": [
+        {
+            "name": "Auth & Debug",
+            "description": "Login flows and debug utilities.",
+            "item": [
+                {
+                    "name": "Home – Check login status",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                ""
+                            ]
+                        },
+                        "description": "Returns a confirmation string if the session is active. Use as a quick health/login check."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login via Spotify (open in browser)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/oauth2/authorization/spotify",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "oauth2",
+                                "authorization",
+                                "spotify"
+                            ]
+                        },
+                        "description": "Open this URL in a browser to start the Spotify OAuth2 flow. Postman cannot follow the redirect to Spotify's login page."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Login via YouTube / Google (open in browser)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/oauth2/authorization/google",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "oauth2",
+                                "authorization",
+                                "google"
+                            ]
+                        },
+                        "description": "Open this URL in a browser to start the Google/YouTube OAuth2 flow."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Debug – Get current OAuth2 access token",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/debug/token",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "debug",
+                                "token"
+                            ]
+                        },
+                        "description": "Returns the raw OAuth2 access token for the currently authenticated user. Useful for copying a token to test platform APIs directly."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Playlists",
+            "description": "Fetch, create, and manage playlists on Spotify or YouTube.",
+            "item": [
+                {
+                    "name": "Get all playlists (Spotify)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists?platform=SPOTIFY",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY",
+                                    "description": "SPOTIFY | YOUTUBE"
+                                }
+                            ]
+                        },
+                        "description": "Returns all playlists belonging to the authenticated user on Spotify."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get all playlists (YouTube)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists?platform=YOUTUBE",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "YOUTUBE"
+                                }
+                            ]
+                        },
+                        "description": "Returns all playlists belonging to the authenticated user on YouTube."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get playlist tracks (Spotify)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/{{spotifyPlaylistId}}/items?platform=SPOTIFY",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "{{spotifyPlaylistId}}",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY"
+                                }
+                            ]
+                        },
+                        "description": "Returns all tracks in the given Spotify playlist as a list of TrackDto objects (name, artists, album, durationMs, explicit)."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Get playlist tracks (YouTube)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/{{youtubePlaylistId}}/items?platform=YOUTUBE",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "{{youtubePlaylistId}}",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "YOUTUBE"
+                                }
+                            ]
+                        },
+                        "description": "Returns all videos (tracks) in the given YouTube playlist."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create playlist (Spotify)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"My New Playlist\",\n  \"description\": \"Created via Crossplay\",\n  \"isPublic\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists?platform=SPOTIFY",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY"
+                                }
+                            ]
+                        },
+                        "description": "Creates a new empty playlist on Spotify. Returns the created PlaylistDto."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Create playlist (YouTube)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"My New Playlist\",\n  \"description\": \"Created via Crossplay\",\n  \"isPublic\": true\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists?platform=YOUTUBE",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "YOUTUBE"
+                                }
+                            ]
+                        },
+                        "description": "Creates a new empty playlist on YouTube."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add tracks to playlist (Spotify)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"trackIds\": [\n    \"4iV5W9uYEdYUVa79Axb7Rh\",\n    \"1301WleyT98MSxVHPZCA6M\"\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/{{spotifyPlaylistId}}/items?platform=SPOTIFY",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "{{spotifyPlaylistId}}",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY"
+                                }
+                            ]
+                        },
+                        "description": "Adds the given Spotify track IDs to the playlist. The backend automatically prefixes `spotify:track:` — pass raw IDs only."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Add tracks to playlist (YouTube)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"trackIds\": [\n    \"dQw4w9WgXcQ\",\n    \"9bZkp7q19f0\"\n  ]\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/{{youtubePlaylistId}}/items?platform=YOUTUBE",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "{{youtubePlaylistId}}",
+                                "items"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "YOUTUBE"
+                                }
+                            ]
+                        },
+                        "description": "Adds the given YouTube video IDs to a YouTube playlist."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Copy playlist (Spotify)",
+                    "request": {
+                        "method": "POST",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/{{spotifyPlaylistId}}/copy?platform=SPOTIFY&newName=My%20Copied%20Playlist",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "{{spotifyPlaylistId}}",
+                                "copy"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY"
+                                },
+                                {
+                                    "key": "newName",
+                                    "value": "My Copied Playlist"
+                                }
+                            ]
+                        },
+                        "description": "Duplicates an existing playlist on the same platform under a new name. Returns the created PlaylistDto."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search tracks (Spotify)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/search?platform=SPOTIFY&query=Blinding%20Lights",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "SPOTIFY",
+                                    "description": "SPOTIFY | YOUTUBE"
+                                },
+                                {
+                                    "key": "query",
+                                    "value": "Blinding Lights",
+                                    "description": "Free-text query (artist + title recommended)"
+                                }
+                            ]
+                        },
+                        "description": "Searches Spotify for tracks matching the query. Returns up to 5 TrackDto candidates."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Search tracks (YouTube)",
+                    "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                            "raw": "{{baseUrl}}/api/playlists/search?platform=YOUTUBE&query=Blinding%20Lights%20The%20Weeknd",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "playlists",
+                                "search"
+                            ],
+                            "query": [
+                                {
+                                    "key": "platform",
+                                    "value": "YOUTUBE"
+                                },
+                                {
+                                    "key": "query",
+                                    "value": "Blinding Lights The Weeknd"
+                                }
+                            ]
+                        },
+                        "description": "Searches YouTube for videos matching the query. Results include real durations fetched via a secondary /videos API call."
+                    },
+                    "response": []
+                }
+            ]
+        },
+        {
+            "name": "Migration",
+            "description": "Cross-platform playlist migration with duration-based best-match selection.",
+            "item": [
+                {
+                    "name": "Migrate – Spotify → YouTube (full playlist)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sourcePlatform\": \"SPOTIFY\",\n  \"targetPlatform\": \"YOUTUBE\",\n  \"sourcePlaylistId\": \"{{spotifyPlaylistId}}\",\n  \"targetPlaylistName\": \"My Playlist on YouTube\",\n  \"skipUnmatched\": true,\n  \"durationToleranceMs\": 5000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/migration/migrate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "migration",
+                                "migrate"
+                            ]
+                        },
+                        "description": "Migrates every track from a Spotify playlist to a new YouTube playlist.\n\n**Request fields:**\n- `sourcePlatform` / `targetPlatform`: `SPOTIFY` or `YOUTUBE`\n- `sourcePlaylistId`: source playlist ID\n- `targetPlaylistName` *(optional)*: name for the new playlist — defaults to `\"Migrated Playlist using Crossplay\"`\n- `skipUnmatched`: `true` = skip unmatched tracks and return them in `failedTracks`; `false` = abort on first miss\n- `durationToleranceMs`: acceptable ms delta for a duration match (default 5000)\n\n**Response fields:**\n- `totalTracks`: number of source tracks\n- `matched`: number successfully added\n- `skipped`: number skipped (unmatched)\n- `failedTracks`: list of track names that could not be matched"
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Migrate – YouTube → Spotify (full playlist)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sourcePlatform\": \"YOUTUBE\",\n  \"targetPlatform\": \"SPOTIFY\",\n  \"sourcePlaylistId\": \"{{youtubePlaylistId}}\",\n  \"targetPlaylistName\": \"My Playlist on Spotify\",\n  \"skipUnmatched\": true,\n  \"durationToleranceMs\": 5000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/migration/migrate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "migration",
+                                "migrate"
+                            ]
+                        },
+                        "description": "Migrates every track from a YouTube playlist to a new Spotify playlist."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Migrate – Spotify → YouTube (partial, specific tracks)",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sourcePlatform\": \"SPOTIFY\",\n  \"targetPlatform\": \"YOUTUBE\",\n  \"sourcePlaylistId\": \"{{spotifyPlaylistId}}\",\n  \"sourceTrackIds\": [\n    \"4iV5W9uYEdYUVa79Axb7Rh\",\n    \"1301WleyT98MSxVHPZCA6M\"\n  ],\n  \"targetPlaylistName\": \"Partial Migration\",\n  \"skipUnmatched\": true,\n  \"durationToleranceMs\": 5000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/migration/migrate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "migration",
+                                "migrate"
+                            ]
+                        },
+                        "description": "Partial migration — only the Spotify track IDs listed in `sourceTrackIds` are migrated. The full playlist is fetched then filtered in memory. `sourcePlaylistId` is still required."
+                    },
+                    "response": []
+                },
+                {
+                    "name": "Migrate – Fail fast on unmatched tracks",
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"sourcePlatform\": \"SPOTIFY\",\n  \"targetPlatform\": \"YOUTUBE\",\n  \"sourcePlaylistId\": \"{{spotifyPlaylistId}}\",\n  \"skipUnmatched\": false,\n  \"durationToleranceMs\": 3000\n}"
+                        },
+                        "url": {
+                            "raw": "{{baseUrl}}/api/migration/migrate",
+                            "host": [
+                                "{{baseUrl}}"
+                            ],
+                            "path": [
+                                "api",
+                                "migration",
+                                "migrate"
+                            ]
+                        },
+                        "description": "Sets `skipUnmatched: false` so migration aborts on the first track that cannot be matched. Uses a tighter 3 s duration tolerance."
+                    },
+                    "response": []
+                }
+            ]
+        }
+    ]
+}

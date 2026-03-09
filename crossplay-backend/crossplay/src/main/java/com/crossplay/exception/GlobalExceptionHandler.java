@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Central exception handler – translates all exceptions into a consistent
@@ -54,6 +55,15 @@ public class GlobalExceptionHandler {
 
         log.error("Crossplay error [path={}]: {}", request.getRequestURI(), ex.getMessage(), ex);
         return build(ex.getStatus(), ex, request);
+    }
+
+    // ── NoResourceFoundException → 404 (no stack trace) ─────────────────────
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException ex, HttpServletRequest request) {
+
+        log.debug("Static resource not found [path={}]", request.getRequestURI());
+        return build(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     // ── Catch-all → 500 ──────────────────────────────────────────────────────
